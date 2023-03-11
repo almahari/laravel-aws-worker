@@ -22,7 +22,8 @@ trait BindsWorker
     protected $workerImplementations = [
         '5\.[345678]\.\d+' => Laravel53Worker::class,
         '[67]\.\d+\.\d+' => Laravel6Worker::class,
-        '[89]\.\d+\.\d+' => Laravel8Worker::class
+        '[89]\.\d+\.\d+' => Laravel8Worker::class,
+        '10\..*' => Laravel8Worker::class
     ];
 
     /**
@@ -44,7 +45,7 @@ trait BindsWorker
     protected function bindWorker()
     {
         // If Laravel version is 6 or above then the worker bindings change. So we initiate it here
-        if ($this->app->version() >= 6) {
+        if ($this->getVersion() >= 6) {
             $this->app->singleton(Worker::class, function () {
                 $isDownForMaintenance = function () {
                     return $this->app->isDownForMaintenance();
@@ -60,5 +61,24 @@ trait BindsWorker
         }
 
         $this->app->bind(WorkerInterface::class, $this->findWorkerClass($this->app->version()));
+    }
+
+    protected function getVersion()
+    {
+        $version = $this->app->version();
+        if(is_float($version))
+            return $version;
+
+        if(is_numeric($version))
+            return floatval($version);
+
+        $parts = explode(".", $version);
+
+        if(isset($parts[0]) && is_numeric($parts[0]))
+        {
+            return floatval($parts[0]);
+        }
+
+        return 8;
     }
 }
